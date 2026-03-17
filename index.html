@@ -2,8 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Увлекательный Лабиринт</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Тест на концентрацию</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -13,23 +13,75 @@
             color: white;
             font-family: sans-serif;
             user-select: none;
+            touch-action: none; /* Отключаем стандартные жесты браузера */
         }
 
         #game-container {
             display: none;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             height: 100vh;
+            padding-top: 20px;
         }
 
         canvas {
             background-color: #000;
-            border: 4px solid #4a5568;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            cursor: crosshair; 
+            border: 2px solid #4a5568;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            cursor: crosshair;
+            /* Адаптивный размер для мобилок */
+            max-width: 90vw;
+            max-height: 50vh;
+            width: auto;
+            height: auto;
         }
+
+        /* Мобильное управление */
+        #mobile-controls {
+            display: none; /* По умолчанию скрыто */
+            margin-top: 20px;
+            display: grid;
+            grid-template-columns: repeat(3, 60px);
+            grid-template-rows: repeat(3, 60px);
+            gap: 5px;
+        }
+        
+        /* Показываем только на сенсорных устройствах */
+        @media (pointer: coarse) {
+            #mobile-controls {
+                display: grid;
+            }
+            /* Скрываем подсказку про клавиатуру на мобилах */
+            #keyboard-hint {
+                display: none;
+            }
+        }
+
+        .control-btn {
+            width: 60px;
+            height: 60px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.7);
+            touch-action: manipulation;
+        }
+
+        .control-btn:active {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .btn-up { grid-column: 2; grid-row: 1; }
+        .btn-left { grid-column: 1; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down { grid-column: 2; grid-row: 3; }
+
 
         /* Стили для скримера */
         #screamer {
@@ -56,7 +108,6 @@
             100% { background-color: white; }
         }
 
-        /* Контейнер для твоей прекрасной физиономии */
         .scary-face-container {
             width: 120vw;
             height: 120vh;
@@ -70,7 +121,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            /* Фильтры, чтобы твоя фотка выглядела как кадр из даркнета */
             filter: contrast(150%) brightness(80%) saturate(120%);
         }
 
@@ -81,53 +131,41 @@
             75% { transform: translate(20px, -20px) scale(1.2) rotate(-2deg); }
             100% { transform: translate(20px, 20px) scale(1.1) rotate(0deg); }
         }
-
-        .blood-text {
-            position: absolute;
-            font-size: 15vw;
-            color: red;
-            font-weight: bold;
-            text-transform: uppercase;
-            text-shadow: 0 0 20px darkred;
-            animation: textGlitch 0.1s infinite;
-            pointer-events: none;
-            z-index: 10;
-        }
-
-        @keyframes textGlitch {
-            0% { transform: skewX(20deg); opacity: 0.8; }
-            50% { transform: skewX(-20deg); opacity: 1; }
-            100% { transform: skewX(10deg); opacity: 0.9; }
-        }
     </style>
 </head>
 <body class="antialiased">
 
+    <!-- Экран приветствия -->
     <div id="start-screen" class="flex flex-col items-center justify-center h-screen bg-gray-900 text-center px-4">
-        <h1 class="text-4xl md:text-5xl font-bold mb-6 text-blue-400">Тест на концентрацию 🎯</h1>
-        <p class="text-lg md:text-xl text-gray-300 mb-2 max-w-2xl">
-            Эта игра проверит твою способность фокусироваться на мелких деталях. 
-            Проведи синий квадрат к зеленой зоне.
+        <h1 class="text-3xl md:text-5xl font-bold mb-6 text-blue-400">Тест на концентрацию 🎯</h1>
+        <p class="text-base md:text-xl text-gray-300 mb-8 max-w-2xl">
+            Проведи синий квадрат к зеленой зоне. Будь предельно внимателен.
         </p>
-        <p class="text-sm text-red-400 mb-8 font-semibold animate-pulse">
-            ⚠️ Пожалуйста, надень наушники и сделай звук погромче для полного погружения. Пододвинься ближе к экрану.
-        </p>
-        <button id="start-btn" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xl font-bold transition transform hover:scale-105 shadow-lg">
-            Начать игру
+        <button id="start-btn" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-lg text-xl font-bold transition transform hover:scale-105 shadow-lg active:scale-95">
+            Начать тест
         </button>
     </div>
 
+    <!-- Игровой экран -->
     <div id="game-container">
-        <h2 class="text-2xl font-semibold mb-4 text-gray-200">Используй стрелочки или WASD</h2>
+        <h2 id="keyboard-hint" class="text-xl font-semibold mb-2 text-gray-200 hidden md:block">Используй стрелочки или WASD</h2>
         <canvas id="maze-canvas" width="400" height="400"></canvas>
+        
+        <!-- Мобильный D-pad -->
+        <div id="mobile-controls">
+            <div class="control-btn btn-up" data-dir="up">↑</div>
+            <div class="control-btn btn-left" data-dir="left">←</div>
+            <div class="control-btn btn-right" data-dir="right">→</div>
+            <div class="control-btn btn-down" data-dir="down">↓</div>
+        </div>
     </div>
 
+    <!-- Скример -->
     <div id="screamer">
         <div class="scary-face-container">
-            <!-- Твоя фотка подтягивается здесь. Обязательно назови файл face.jpg! -->
-            <img src="face.jpg" alt="Смерть от инфаркта" onerror="this.style.display='none'; document.getElementById('screamer').style.backgroundColor='red';">
+            <!-- Твоя фотка: face.jpg -->
+            <img src="face.jpg" alt="" onerror="this.style.display='none'; document.getElementById('screamer').style.backgroundColor='red';">
         </div>
-        <div class="blood-text">ОБЕРНИСЬ</div>
     </div>
 
     <script>
@@ -156,13 +194,20 @@
 
         const canvas = document.getElementById('maze-canvas');
         const ctx = canvas.getContext('2d');
-        const tileSize = canvas.width / mazeMap[0].length;
+        // Размеры для отрисовки
+        const renderWidth = 400;
+        const renderHeight = 400;
+        canvas.width = renderWidth;
+        canvas.height = renderHeight;
+        const tileSize = renderWidth / mazeMap[0].length;
         
         let playerPos = { x: 1, y: 1 };
         let gameActive = false;
         let audioContext = null;
+        let screamBuffer = null;
 
         function drawMaze() {
+            ctx.clearRect(0, 0, renderWidth, renderHeight);
             for (let y = 0; y < mazeMap.length; y++) {
                 for (let x = 0; x < mazeMap[y].length; x++) {
                     if (mazeMap[y][x] === 1) {
@@ -171,97 +216,104 @@
                     } else if (mazeMap[y][x] === 3) {
                         ctx.fillStyle = '#48bb78';
                         ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-                    } else {
-                        ctx.fillStyle = '#000000';
-                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
                     }
                 }
             }
             ctx.fillStyle = '#4299e1';
-            ctx.fillRect(playerPos.x * tileSize + 2, playerPos.y * tileSize + 2, tileSize - 4, tileSize - 4);
+            ctx.fillRect(playerPos.x * tileSize + 1, playerPos.y * tileSize + 1, tileSize - 2, tileSize - 2);
         }
 
-        function initAudio() {
-            const AudioContext = window.AudioContext || window.webkitAudioContext;
-            audioContext = new AudioContext();
+        // --- Аудио ---
+        async function initAudio() {
+            try {
+                window.AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContext = new AudioContext();
+                // Загружаем твой scream.mp3
+                const response = await fetch('scream.mp3');
+                const arrayBuffer = await response.arrayBuffer();
+                screamBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                console.log('Аудио для инфаркта готово');
+            } catch (e) {
+                console.error('Ошибка загрузки scream.mp3:', e);
+                alert('Ошибка: Файл scream.mp3 не найден. Пранк не удался.');
+            }
         }
 
         function triggerScreamer() {
             gameActive = false;
-            
             const screamerDiv = document.getElementById('screamer');
             screamerDiv.style.display = 'flex';
             screamerDiv.classList.add('flash-bg');
 
-            try { document.documentElement.requestFullscreen(); } catch(e) {}
+            try { 
+                if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+                else if (document.documentElement.webkitRequestFullscreen) document.documentElement.webkitRequestFullscreen();
+            } catch(e) {}
 
-            // Адский визг без внешних аудиофайлов (чистый синтез)
-            if (audioContext) {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                const bufferSize = audioContext.sampleRate * 2;
-                const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
-                const data = buffer.getChannelData(0);
-                for (let i = 0; i < bufferSize; i++) {
-                    data[i] = Math.random() * 2 - 1;
-                }
-                const noiseSource = audioContext.createBufferSource();
-                noiseSource.buffer = buffer;
-
-                oscillator.type = 'sawtooth';
-                oscillator.frequency.setValueAtTime(150, audioContext.currentTime);
-                oscillator.frequency.exponentialRampToValueAtTime(3000, audioContext.currentTime + 0.1);
-                oscillator.frequency.exponentialRampToValueAtTime(1000, audioContext.currentTime + 1.5);
-
-                gainNode.gain.setValueAtTime(0, audioContext.currentTime);
-                gainNode.gain.linearRampToValueAtTime(3, audioContext.currentTime + 0.05);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 2);
-
-                oscillator.connect(gainNode);
-                noiseSource.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-
-                oscillator.start();
-                noiseSource.start();
-                
-                oscillator.stop(audioContext.currentTime + 2.5);
-                noiseSource.stop(audioContext.currentTime + 2.5);
+            // Воспроизводим загруженный звук
+            if (audioContext && screamBuffer) {
+                const source = audioContext.createBufferSource();
+                source.buffer = screamBuffer;
+                source.connect(audioContext.destination);
+                source.start(0);
+            } else {
+                 console.log('Аудио не готово, жертва спасена (пока что)');
             }
         }
 
-        window.addEventListener('keydown', (e) => {
+        // --- Управление ---
+        function movePlayer(dx, dy) {
             if (!gameActive) return;
-
-            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) {
-                e.preventDefault();
-            }
-
-            let newX = playerPos.x;
-            let newY = playerPos.y;
-
-            if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') newY--;
-            if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') newY++;
-            if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') newX--;
-            if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') newX++;
+            let newX = playerPos.x + dx;
+            let newY = playerPos.y + dy;
 
             if (newY >= 0 && newY < mazeMap.length && newX >= 0 && newX < mazeMap[0].length) {
                 const targetCell = mazeMap[newY][newX];
-                
                 if (targetCell !== 1) {
                     playerPos.x = newX;
                     playerPos.y = newY;
                     drawMaze();
-
-                    if (targetCell === 3) {
-                        triggerScreamer();
-                    }
+                    if (targetCell === 3) triggerScreamer();
                 }
             }
+        }
+
+        // Клавиатура
+        window.addEventListener('keydown', (e) => {
+            if(["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].indexOf(e.code) > -1) e.preventDefault();
+            if (e.key === 'ArrowUp' || e.key.toLowerCase() === 'w') movePlayer(0, -1);
+            if (e.key === 'ArrowDown' || e.key.toLowerCase() === 's') movePlayer(0, 1);
+            if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'a') movePlayer(-1, 0);
+            if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'd') movePlayer(1, 0);
         });
 
-        document.getElementById('start-btn').addEventListener('click', () => {
-            initAudio();
+        // Мобильные кнопки (Touch)
+        document.querySelectorAll('.control-btn').forEach(btn => {
+            btn.addEventListener('touchstart', (e) => {
+                e.preventDefault(); // Чтобы не было зума или скролла
+                const dir = btn.dataset.dir;
+                if (dir === 'up') movePlayer(0, -1);
+                if (dir === 'down') movePlayer(0, 1);
+                if (dir === 'left') movePlayer(-1, 0);
+                if (dir === 'right') movePlayer(1, 0);
+                // Вибрация для тактильного отклика (если поддерживается)
+                if (navigator.vibrate) navigator.vibrate(10);
+            });
+        });
+
+        // --- Старт игры ---
+        document.getElementById('start-btn').addEventListener('click', async () => {
+            // Инициализируем аудио контекст по клику (требование браузеров)
+            await initAudio(); 
+            
+            // На мобилках пробуем сразу фуллскрин
+            try { 
+                if (/Mobi|Android/i.test(navigator.userAgent)) {
+                     if (document.documentElement.requestFullscreen) await document.documentElement.requestFullscreen();
+                     else if (document.documentElement.webkitRequestFullscreen) await document.documentElement.webkitRequestFullscreen();
+                }
+            } catch(e) {}
+
             document.getElementById('start-screen').style.display = 'none';
             document.getElementById('game-container').style.display = 'flex';
             gameActive = true;
